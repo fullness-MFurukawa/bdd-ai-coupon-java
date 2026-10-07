@@ -28,6 +28,12 @@ dependencies {
 	testCompileOnly("org.projectlombok:lombok")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	testAnnotationProcessor("org.projectlombok:lombok")
+
+	// Gherkin の .feature を実行する
+	testImplementation(platform("io.cucumber:cucumber-bom:8.0.4"))
+	testImplementation("io.cucumber:cucumber-java")
+	testImplementation("io.cucumber:cucumber-junit-platform-engine")
+	testImplementation("org.junit.platform:junit-platform-suite")
 }
 
 tasks.withType<Test> {
