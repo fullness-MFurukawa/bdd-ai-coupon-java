@@ -1,0 +1,97 @@
+@startuml coupon-class
+' クーポンのドメインモデル
+' 対象は src/test/resources/features/coupon.feature の背景と
+' 「購入金額が最低購入金額に 1 円足りない場合はクーポンを使えない」シナリオに必要な範囲。
+' クラス名・属性名・メソッド名は docs/glossary.md の対訳表に従う。
+'
+' 値オブジェクトへの関連線は描かない。どの値オブジェクトを持つかは
+' 属性の型（例 minimumPurchaseAmount : Money）で読み取れるため。
+' 線として残すのは、ドメインサービスから引数・戻り値への依存だけとする。
+'
+' 図番号と見出しは記事側で付けるため、title は置かない。
+
+hide empty members
+skinparam shadowing false
+skinparam nodesep 40
+skinparam ranksep 60
+skinparam class {
+  BackgroundColor<<値オブジェクト>>   #F3F8FD
+  BorderColor<<値オブジェクト>>       #4C7FB0
+  BackgroundColor<<エンティティ>>     #FBF6EC
+  BorderColor<<エンティティ>>         #B08A4C
+  BackgroundColor<<ドメインサービス>> #F2F7F1
+  BorderColor<<ドメインサービス>>     #5E8C58
+}
+
+' ---------------- 上段: ドメインサービス ----------------
+
+class "CouponApplicationService\n（クーポンの適用）" as CouponApplicationService <<ドメインサービス>> {
+  apply(Coupon, Cart, MembershipRank, LocalDateTime) : CouponApplicationResult
+}
+
+' ---------------- 中段: エンティティ ----------------
+
+together {
+  class "Coupon\n（クーポン）" as Coupon <<エンティティ>> {
+    couponCode : CouponCode
+    minimumPurchaseAmount : Money
+    maximumDiscountAmount : Money
+    expirationDate : ExpirationDate
+  }
+
+  class "Cart\n（買い物かご）" as Cart <<エンティティ>> {
+    totalAmount : Money
+  }
+}
+
+' ---------------- 下段: 値オブジェクト ----------------
+
+together {
+  class "CouponCode\n（券種コード）" as CouponCode <<値オブジェクト>> {
+  }
+
+  class "ExpirationDate\n（有効期限）" as ExpirationDate <<値オブジェクト>> {
+  }
+
+  class "Money\n（金額）" as Money <<値オブジェクト>> {
+  }
+
+  class "MembershipRank\n（会員ランク）" as MembershipRank <<値オブジェクト>> {
+  }
+
+  class "CouponApplicationResult\n（適用結果）" as CouponApplicationResult <<値オブジェクト>> {
+    successful : boolean
+    errorMessage : String
+    discountAmount : Money
+    paymentAmount : Money
+  }
+}
+
+' ---------------- 依存 ----------------
+' ドメインサービスは状態を持たず、apply の引数と戻り値としてのみ各クラスを参照する。
+
+CouponApplicationService ..> Coupon : 引数 >
+CouponApplicationService ..> Cart : 引数 >
+CouponApplicationService ..> MembershipRank : 引数 >
+CouponApplicationService ..> CouponApplicationResult : 戻り値 >
+
+' ---------------- 配置の調整（描画されない補助線） ----------------
+
+Coupon -[hidden]right- Cart
+Coupon -[hidden]down- CouponCode
+Cart -[hidden]down- Money
+CouponCode -[hidden]right- ExpirationDate
+ExpirationDate -[hidden]right- Money
+Money -[hidden]right- MembershipRank
+MembershipRank -[hidden]right- CouponApplicationResult
+
+legend bottom
+  |= 分類 |= 表記 |
+  | 値オブジェクト | <<値オブジェクト>> |
+  | エンティティ | <<エンティティ>> |
+  | ドメインサービス | <<ドメインサービス>> |
+  破線の矢印は依存（apply の引数と戻り値）を表す。
+  どの値オブジェクトを持つかは、属性の型で示す。
+endlegend
+
+@enduml
