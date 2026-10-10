@@ -17,7 +17,7 @@
 | クーポン | エンティティ | `Coupon` | | 識別子は券種コード |
 | 買い物かご | エンティティ | `Cart` | | |
 | 割引計算 | ドメインサービス | `DiscountCalculationService` | | |
-| クーポンを適用する | メソッド | `DiscountCalculationService` | `apply(Coupon, Cart, LocalDateTime)` | 戻り値は `CouponApplicationResult`、引数の名前は `coupon`、`cart`、`now`、ステップ定義はこれを呼ぶ |
+| クーポンを適用する | メソッド | `DiscountCalculationService` | `apply(Coupon, Cart, LocalDateTime)` | 戻り値は `CouponApplicationResult`、引数の名前は `coupon`、`cart`、`now`、ステップ定義はこれを呼び出す |
 | クーポンが使えるか | メソッド | `DiscountCalculationService` | `canApply(Coupon, Cart, LocalDateTime)` | 戻り値は `boolean`、引数の名前は `coupon`、`cart`、`now` |
 | 業務ルール違反 | 例外 | `DomainException` | `DomainException(String)`、`DomainException(String, Throwable)` | `RuntimeException` を継承、値オブジェクトやエンティティの制約に反する値を渡された場合に投げる。原因となる例外を包む場合は第2のコンストラクタを使う |
 | 券種コード | 属性 | `Coupon` | `couponCode` | 型は `CouponCode` |
