@@ -17,8 +17,8 @@
 | クーポン | エンティティ | `Coupon` | | 識別子は券種コード |
 | 買い物かご | エンティティ | `Cart` | | |
 | 割引計算 | ドメインサービス | `DiscountCalculationService` | | |
-| クーポンを適用する | メソッド | `DiscountCalculationService` | `apply(Coupon, Cart, LocalDateTime)` | 戻り値は `CouponApplicationResult`、第3引数の名前は `now`、ステップ定義はこれを呼ぶ |
-| クーポンが使えるか | メソッド | `DiscountCalculationService` | `canApply(Coupon, Cart, LocalDateTime)` | 戻り値は `boolean`、第3引数の名前は `now` |
+| クーポンを適用する | メソッド | `DiscountCalculationService` | `apply(Coupon, Cart, LocalDateTime)` | 戻り値は `CouponApplicationResult`、引数の名前は `coupon`、`cart`、`now`、ステップ定義はこれを呼ぶ |
+| クーポンが使えるか | メソッド | `DiscountCalculationService` | `canApply(Coupon, Cart, LocalDateTime)` | 戻り値は `boolean`、引数の名前は `coupon`、`cart`、`now` |
 | 業務ルール違反 | 例外 | `DomainException` | `DomainException(String)`、`DomainException(String, Throwable)` | `RuntimeException` を継承、値オブジェクトやエンティティの制約に反する値を渡された場合に投げる。原因となる例外を包む場合は第2のコンストラクタを使う |
 | 券種コード | 属性 | `Coupon` | `couponCode` | 型は `CouponCode` |
 | 最低購入金額 | 属性 | `Coupon` | `minimumPurchaseAmount` | 型は `Money` |
@@ -34,6 +34,35 @@
 | 金額の値 | 属性 | `Money` | `amount` | 型は `long`（円単位） |
 | 券種コードの値 | 属性 | `CouponCode` | `value` | 型は `String` |
 | 有効期限の日付 | 属性 | `ExpirationDate` | `date` | 型は `LocalDate` |
+
+## ステップ定義
+
+ステップ定義は、テスト側の `jp.co.fullness.coupon` パッケージの `CouponSteps` クラスに記述します。
+アノテーションには `.feature` のステップ文をそのまま使用し、メソッド名は次の表に従います。
+`{string}` と `{int}` は Cucumber のパラメータで、それぞれ `String` と `int` の引数になります。
+
+| 種別 | ステップ文 | メソッド名 |
+|---|---|---|
+| 前提 | クーポン {string} が存在する | `couponExists` |
+| 前提 | クーポン {string} の最低購入金額は {int} 円である | `couponHasMinimumPurchaseAmount` |
+| 前提 | クーポン {string} の割引上限額は {int} 円である | `couponHasMaximumDiscountAmount` |
+| 前提 | クーポン {string} の有効期限は {string} である | `couponExpiresOn` |
+| 前提 | 割引額の端数は切り捨てる | `discountFractionIsTruncated` |
+| 前提 | ポイントは {int} ポイントを {int} 円として計算する | `pointRateIs` |
+| 前提 | 現在日時は {string} である | `currentDateTimeIs` |
+| 前提 | ポイントを利用しない | `pointsAreNotUsed` |
+| 前提 | 会員ランクは {string} である | `membershipRankIs` |
+| 前提 | カートの購入金額は {int} 円である | `cartTotalAmountIs` |
+| もし | クーポン {string} を適用する | `applyCoupon` |
+| ならば | クーポンの適用は失敗する | `couponApplicationFails` |
+| ならば | エラーメッセージ {string} が表示される | `errorMessageIsShown` |
+| ならば | 割引額は {int} 円である | `discountAmountIs` |
+| ならば | 支払金額は {int} 円である | `paymentAmountIs` |
+
+メソッド名の方針は、前提は状況を表す文、もしは動詞から始まる文、ならばは検証する内容を表す文とします。
+
+`.feature` で「かつ」と記述されたステップは、直前のステップと同じ種別（`@前提` または `@ならば`）で
+定義します。金額は `{int}` で受け取り、`int` の引数とします。`Money` への変換はステップ定義の中で行います。
 
 ## 補足
 
