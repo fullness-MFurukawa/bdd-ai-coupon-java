@@ -17,8 +17,16 @@
 | クーポン | エンティティ | `Coupon` | | 識別子は券種コード |
 | 買い物かご | エンティティ | `Cart` | | |
 | 割引計算 | ドメインサービス | `DiscountCalculationService` | | |
-| クーポンを適用する | メソッド | `DiscountCalculationService` | `apply(Coupon, Cart, LocalDateTime)` | 戻り値は `CouponApplicationResult`、引数の名前は `coupon`、`cart`、`now`、ステップ定義はこれを呼び出す |
-| クーポンが使えるか | メソッド | `DiscountCalculationService` | `canApply(Coupon, Cart, LocalDateTime)` | 戻り値は `boolean`、引数の名前は `coupon`、`cart`、`now` |
+| クーポンを適用する | メソッド | `DiscountCalculationService` | `apply(Coupon, Cart, LocalDateTime)` | 戻り値は `CouponApplicationResult`、引数の名前は `coupon`、`cart`、`now`、ステップ定義はこれを呼び出す。判定は有効期限、最低購入金額の順に行い、両方を満たさない場合は有効期限切れのメッセージを返す。適用できない場合は `CouponApplicationResult.failure` を返す。適用できる場合の割引額の計算は現時点では実装せず、`UnsupportedOperationException` のままとする |
+| クーポンが使えるか | メソッド | `DiscountCalculationService` | `canApply(Coupon, Cart, LocalDateTime)` | 戻り値は `boolean`、引数の名前は `coupon`、`cart`、`now`。`Coupon.isValidOn` と `Coupon.isSatisfiedBy` の両方が `true` の場合に `true` |
+| 金額が他の金額より少ないか | メソッド | `Money` | `isLessThan(Money)` | 戻り値は `boolean`、引数の名前は `other` |
+| 指定した日が有効期限内か | メソッド | `ExpirationDate` | `isValidOn(LocalDate)` | 当日まで有効。引数の名前は `targetDate`。引数の日付が有効期限の日付以前であれば `true` |
+| 最低購入金額を満たすか | メソッド | `Coupon` | `isSatisfiedBy(Money)` | 引数は購入金額で、名前は `totalAmount`。購入金額が最低購入金額以上であれば `true` |
+| クーポンが有効期限内か | メソッド | `Coupon` | `isValidOn(LocalDateTime)` | 引数の名前は `dateTime`。引数の日時を日付に変換し、`ExpirationDate.isValidOn` に委譲する |
+| 同一のクーポンか | メソッド | `Coupon` | `equals`、`hashCode` | 券種コードが等しければ同一とみなす。`@EqualsAndHashCode(onlyExplicitlyIncluded = true)` と `couponCode` への `@EqualsAndHashCode.Include` で実装する |
+| 適用の失敗 | メソッド | `CouponApplicationResult` | `failure(String, Money)` | 静的ファクトリ。引数の名前は `errorMessage`、`totalAmount`。成否は `false`、割引額は 0 円、支払金額は購入金額とする |
+| 最低購入金額未満のエラーメッセージ | 文言 | `DiscountCalculationService` | | 「{最低購入金額} 円以上のお買い上げでご利用いただけます」。金額はクーポンの最低購入金額から生成し、3桁ごとにカンマで区切る（例：5,000）。書式は `Locale.JAPAN` を指定して生成する |
+| 有効期限切れのエラーメッセージ | 文言 | `DiscountCalculationService` | | 「このクーポンは有効期限が切れています」 |
 | 業務ルール違反 | 例外 | `DomainException` | `DomainException(String)`、`DomainException(String, Throwable)` | `RuntimeException` を継承、値オブジェクトやエンティティの制約に反する値を渡された場合にスローする。原因となる例外を包む場合は第2のコンストラクタを使用する |
 | 券種コード | 属性 | `Coupon` | `couponCode` | 型は `CouponCode` |
 | 最低購入金額 | 属性 | `Coupon` | `minimumPurchaseAmount` | 型は `Money` |
@@ -64,6 +72,33 @@
 
 `.feature` で「かつ」と記述されたステップは、直前のステップと同じ種別（`@前提` または `@ならば`）で
 定義します。金額は `{int}` で受け取り、`int` の引数とします。`Money` への変換はステップ定義の中で行います。
+日付と日時は `{string}` で受け取り、`LocalDate` と `LocalDateTime` への変換もステップ定義の中で行います。
+`.feature` の書式は、日付が `yyyy-MM-dd`、日時が `yyyy-MM-dd HH:mm:ss` です。書式は `DateTimeFormatter` の
+定数として `CouponSteps` に定義します。
+
+### ステップ定義が保持する状態
+
+背景の各ステップで受け取った値は、次のフィールドに保持します。`Coupon` と `Cart` は、属性がそろう
+「クーポン {string} を適用する」のステップで生成し、`DiscountCalculationService.apply` を呼び出します。
+検証には AssertJ の `assertThat` を使用し、`result` の各属性を確認します。
+
+| 用語 | フィールド | 型 | 設定するステップ |
+|---|---|---|---|
+| 券種コード | `couponCode` | `CouponCode` | クーポン {string} が存在する |
+| 最低購入金額 | `minimumPurchaseAmount` | `Money` | クーポン {string} の最低購入金額は {int} 円である |
+| 割引上限額 | `maximumDiscountAmount` | `Money` | クーポン {string} の割引上限額は {int} 円である |
+| 有効期限 | `expirationDate` | `ExpirationDate` | クーポン {string} の有効期限は {string} である |
+| ポイントの換算における、ポイント数 | `pointRatePoints` | `int` | ポイントは {int} ポイントを {int} 円として計算する |
+| ポイントの換算における、ポイント数に相当する金額（円） | `pointRateYen` | `int` | ポイントは {int} ポイントを {int} 円として計算する |
+| 現在日時 | `now` | `LocalDateTime` | 現在日時は {string} である |
+| 会員ランク | `membershipRank` | `MembershipRank` | 会員ランクは {string} である |
+| 購入金額 | `totalAmount` | `Money` | カートの購入金額は {int} 円である |
+| 適用結果 | `result` | `CouponApplicationResult` | クーポン {string} を適用する |
+| 割引計算 | `discountCalculationService` | `DiscountCalculationService` | （フィールドの宣言時に生成する） |
+
+「割引額の端数は切り捨てる」「ポイントは {int} ポイントを {int} 円として計算する」「ポイントを利用しない」の
+3つのステップは、現時点のシナリオの判定には関わりません。受け取った値がある場合はフィールドに保持するだけとし、
+判定には使用しません。これらを検証するシナリオを追加した時点で、対訳表に用語を加え、判定に使用します。
 
 ## 補足
 
@@ -102,6 +137,23 @@
 仕様のどこにも記述されていません。これは正常な結果として返すものではないため、`DomainException` を
 スローして処理を中断します。対訳表に「業務ルール違反」として `DomainException` の行があるのは、
 この例外を表すためです。
+
+**判定の順序は、業務上の判断として定めています。**
+有効期限と最低購入金額の両方を満たさない場合にどちらのメッセージを返すかは、`.feature` に記述されていません。
+これは「条件が競合した場合の優先順位」にあたり、開発側で定めてよい事項ではありません。本プロジェクトでは、
+有効期限が切れたクーポンは金額の条件を確認するまでもなく使えないことを利用者に伝えるべきである、という判断で、
+有効期限を先に判定します。この順序は `apply` の備考に記載しています。
+
+**エラーメッセージの数値は、最低購入金額から生成します。**
+「5,000 円以上のお買い上げでご利用いただけます」の文言は `.feature` で与えられています。数値の 5,000 は
+クーポンの最低購入金額ですので、文言を定数として固定せず、最低購入金額から生成します。最低購入金額の異なる
+クーポンを追加したとき、文言の数値もそれに合わせて変わるべきだという判断です。カンマ区切りも `.feature` の
+記述に合わせます。
+
+**`.feature` に記述されていない振る舞いは、`CLAUDE.md` の例外の方針に従います。**
+負の金額や、該当しない会員ランクの名称は、業務の場面では起こりえないプログラムの誤りです。これらの扱いは
+`.feature` には記述されていませんが、「推測で補わない」の対象となる業務上の判断ではなく、`CLAUDE.md` の
+「例外の方針」で定めた `DomainException` のスローにあたります。開発者に確認せずに実装してください。
 
 **他の言語でも、この表の左の2列は変わりません。**
 対訳表の左の2列、すなわちユビキタス言語と分類は、実装する言語に依存しません。

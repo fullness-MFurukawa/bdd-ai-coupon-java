@@ -38,6 +38,8 @@ dependencies {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+	systemProperty("cucumber.plugin", "pretty")
+	systemProperty("cucumber.publish.quiet", "true")
 	testLogging {
 		showStandardStreams = true
 		exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL

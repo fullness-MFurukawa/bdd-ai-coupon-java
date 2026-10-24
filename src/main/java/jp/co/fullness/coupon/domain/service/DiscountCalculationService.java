@@ -1,6 +1,7 @@
 package jp.co.fullness.coupon.domain.service;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 import jp.co.fullness.coupon.domain.model.Cart;
 import jp.co.fullness.coupon.domain.model.Coupon;
@@ -13,6 +14,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DiscountCalculationService {
 
+	/** 有効期限切れのエラーメッセージ */
+	private static final String EXPIRED_ERROR_MESSAGE = "このクーポンは有効期限が切れています";
+
+	/** 最低購入金額未満のエラーメッセージ（最低購入金額は3桁ごとにカンマで区切る） */
+	private static final String BELOW_MINIMUM_PURCHASE_ERROR_MESSAGE = "%,d 円以上のお買い上げでご利用いただけます";
+
 	/**
 	 * クーポンを適用する。
 	 *
@@ -22,6 +29,15 @@ public class DiscountCalculationService {
 	 * @return 適用結果
 	 */
 	public CouponApplicationResult apply(Coupon coupon, Cart cart, LocalDateTime now) {
+		// 有効期限が切れたクーポンは、金額の条件を確認するまでもなく使えないことを優先して伝える
+		if (!coupon.isValidOn(now)) {
+			return CouponApplicationResult.failure(EXPIRED_ERROR_MESSAGE, cart.getTotalAmount());
+		}
+		if (!coupon.isSatisfiedBy(cart.getTotalAmount())) {
+			String errorMessage = String.format(Locale.JAPAN, BELOW_MINIMUM_PURCHASE_ERROR_MESSAGE,
+					coupon.getMinimumPurchaseAmount().amount());
+			return CouponApplicationResult.failure(errorMessage, cart.getTotalAmount());
+		}
 		throw new UnsupportedOperationException("未実装");
 	}
 
@@ -34,7 +50,7 @@ public class DiscountCalculationService {
 	 * @return クーポンが使える場合は {@code true}
 	 */
 	public boolean canApply(Coupon coupon, Cart cart, LocalDateTime now) {
-		throw new UnsupportedOperationException("未実装");
+		return coupon.isValidOn(now) && coupon.isSatisfiedBy(cart.getTotalAmount());
 	}
 
 }

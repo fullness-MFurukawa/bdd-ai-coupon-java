@@ -10,4 +10,14 @@ import java.time.LocalDate;
  */
 public record ExpirationDate(LocalDate date) {
 
+	/**
+	 * 指定した日が有効期限内か。
+	 *
+	 * @param targetDate 判定する日付
+	 * @return 判定する日付が有効期限の日付以前である場合は {@code true}
+	 */
+	public boolean isValidOn(LocalDate targetDate) {
+		return !targetDate.isAfter(date);
+	}
+
 }

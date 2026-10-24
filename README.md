@@ -20,6 +20,7 @@ Java と Cucumber-JVM で実行します。
 |----|---------|
 | 第2回 | [仕様がそのまま品質基準になる——AIと作るGherkin（ガーキン）入門](https://note.com/fullness_dev/n/n8afa12c67ee3) |
 | 第3回 | [仕様から実装へ（Java編-①）——.feature を実行するコードを AI に生成させる](https://note.com/fullness_dev/n/n4b1c552f1686) |
+| 第4回 | 仕様から実装へ（Java編-②）——シナリオを成功させる処理を AI に生成させる |
 
 記事の公開時点のコードは、タグから取得できます。記事の手順に沿って実行する場合は、
 対応するタグをチェックアウトしてください。
@@ -28,7 +29,13 @@ Java と Cucumber-JVM で実行します。
 git clone https://github.com/fullness-MFurukawa/bdd-ai-coupon-java.git
 cd bdd-ai-coupon-java
 git checkout v3   # 第3回の公開時点
+git checkout v4   # 第4回の公開時点
 ```
+
+| タグ | 状態 |
+|------|------|
+| `v3` | ドメインモデルのスケルトンとステップ定義のひな型。15ステップが定義済みで、最初のステップが pending で停止する |
+| `v4` | ドメインモデルとステップ定義に処理を実装。シナリオ「購入金額が最低購入金額に 1 円足りない場合はクーポンを使えない」が成功する |
 
 ---
 
@@ -84,6 +91,14 @@ Windows の場合は次のとおりです。
 gradlew.bat test
 ```
 
+`build.gradle.kts` には Cucumber の出力設定（`cucumber.plugin=pretty`）を記述しています。
+テストを実行すると、`.feature` の各ステップが実行結果とともに表示されます。
+テストが成功した後に再度実行する場合は、`--rerun-tasks` を付けてください。
+
+```bash
+./gradlew test --rerun-tasks
+```
+
 ---
 
 ## ディレクトリ構成
@@ -111,6 +126,9 @@ bdd-ai-coupon-java/
 
 - 値オブジェクトは `record` で実装します
 - エンティティとドメインサービスは Lombok を使用します。`@Data` と `@Setter` は使用しません
+- エンティティには、状態を変更するメソッドではなく、業務上の判断を表すメソッドを持たせます
+- クーポンを使えないことは業務上の正常な結果として `CouponApplicationResult` で返し、
+  業務上の制約に反する値は `DomainException` で報告します
 - ドメイン層は Spring に依存させません
 
 `build.gradle.kts` には、現時点で使用していない依存が含まれています。連載の後半で
@@ -132,4 +150,3 @@ Web API とデータベースへの接続を追加するために加えたもの
 MIT License
 
 本リポジトリのコードは、自由に複製・改変してご利用いただけます。
-けます。

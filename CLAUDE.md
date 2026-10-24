@@ -26,8 +26,10 @@ Java で実行します。
 ### 設計の方針
 
 - 値オブジェクトは `record` で実装する
-- エンティティとドメインサービスは Lombok を使用する。使用するのは `@Getter` と
-  `@RequiredArgsConstructor` のみとし、`@Data` と `@Setter` は使用しない
+- エンティティとドメインサービスは Lombok を使用する。使用するのは `@Getter`、
+  `@RequiredArgsConstructor`、`@EqualsAndHashCode` のみとし、`@Data` と `@Setter` は使用しない
+- `@EqualsAndHashCode` は識別子による同一性を表す場合に限って使用する。
+  `onlyExplicitlyIncluded = true` を指定し、識別子のフィールドに `@EqualsAndHashCode.Include` を付与する
 - エンティティには、状態を変更するメソッドではなく、業務上の判断を表すメソッドを持たせる
 - ドメイン層は Spring に依存させない。`@Component` などのアノテーションを付与しない
 - JPA の `@Entity` をドメインのエンティティに付与しない。永続化が必要になった場合は、
@@ -74,6 +76,11 @@ Java で実行します。
   ステップ定義からは呼び出すだけにする
 - 前提は状況を整える処理、もしは操作、ならばは結果の検証に限る
 - `.feature` を変更しない。ステップ定義が記述しにくい場合は、変更を提案して確認を取る
+- 検証には AssertJ の `assertThat` を使用する
+- 背景のステップで受け取った値はフィールドに保持し、「もし」のステップで
+  ドメインモデルのオブジェクトを生成する
+- `.feature` の文字列から `LocalDate` と `LocalDateTime` への変換はステップ定義で行う。
+  書式は `DateTimeFormatter` の定数として定義する
 
 ## 開発環境
 
